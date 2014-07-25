@@ -1,38 +1,48 @@
-package AdvancedSocketServerStuff;
+
 
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
-import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.FocusEvent;
-import java.awt.event.FocusListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.awt.event.WindowListener;
-import java.io.*;
-import java.net.*;
-import java.sql.Date;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.Socket;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 
-import javax.imageio.ImageIO;
-import javax.management.Query;
-import javax.swing.*;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JPopupMenu;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.table.DefaultTableModel;
+
+import Login.LoginData;
+import Messaging.Message;
+import Registration.RegistrationData;
 
 
 public class ClientSide 
@@ -1238,7 +1248,6 @@ public class ClientSide
 		try
 		{
 			Object[] toSend = {"/GET USERS ONLINE LIST"};
-			
 			oos.writeObject(toSend);
 		}
 		catch(IOException ex)
@@ -1253,9 +1262,12 @@ public class ClientSide
 		{
 			//get along with friend system and message system by using mysql 
 			//http://www.9lessons.info/2010/04/database-design-create-tables-and.html
-
-			Object[] toSend = {"/LOG IN",username,password};
+			LoginData loginData = new LoginData(username ,password);
+			
+			Object[] toSend = {"/LOG IN",loginData};
 			oos.writeObject(toSend);
+			loginData = null;
+			
 		}
 		catch(IOException ex)
 		{
@@ -1288,8 +1300,13 @@ public class ClientSide
 	{
 		try
 		{
-			Object[] toSend = {"/CREATE NEW USER",username,password,email,firstName,lastName,birthDate};
+			RegistrationData registrationData = new RegistrationData(
+				                	              username ,password ,email ,
+					                              firstName ,lastName ,birthDate);
+			
+			Object[] toSend = {"/CREATE NEW USER",registrationData};
 			oos.writeObject(toSend);
+			registrationData = null;
 			
 		}
 		catch(IOException ex)
@@ -1324,7 +1341,7 @@ public class ClientSide
 		}
 	}
 	
-	private void blockTheUser(int targetID)
+	private void blockTheUser(final int targetID)
 	{
 		SwingUtilities.invokeLater(new Runnable(){
 			public void run()
@@ -1342,7 +1359,7 @@ public class ClientSide
 		});
 	}
 	
-	private void unblockTheUser(int targetID)
+	private void unblockTheUser(final int targetID)
 	{
 		SwingUtilities.invokeLater(new Runnable(){
 			public void run()
@@ -1361,17 +1378,25 @@ public class ClientSide
 		
 	}
 	
-	private void sendMessage(final String message)
+	private void sendMessage(final String messageText)
 	{
        SwingUtilities.invokeLater(new Runnable(){
     	   public void run(){
     		   try
     	   		{
-    			   
-    			    Object[] toSend = {"/SEND MESSAGE",user_ID,message,receiver_ID,System.currentTimeMillis(),user_firstName,user_lastName};
-    			    String user_fullName = user_firstName + " "+user_lastName;
-    			    displayMessage(message,user_fullName,user_ID,receiver_ID);
-    	   			oos.writeObject(toSend);
+    			   Message message = new Message();
+    			   message.setMessage(messageText);
+    			   message.setFrom(String.valueOf(user_ID));
+    			   message.setTo(String.valueOf(receiver_ID));
+    			
+    			   Object[] toSend ={"/SEND MESSAGE" , message};
+      			   String user_fullName = user_firstName + " "+user_lastName;
+      			   displayMessage(messageText,user_fullName,user_ID,receiver_ID);
+      	   		   oos.writeObject(toSend);
+      	   		   
+      	   		   message = null;
+    			   //Object[] toSend = {"/SEND MESSAGE",user_ID,message,receiver_ID,System.currentTimeMillis(),user_firstName,user_lastName};
+   			    
     	   		}
     	   		catch(IOException ex)
     	   		{
@@ -1384,7 +1409,7 @@ public class ClientSide
 	
 	
 	
-	private void displayMessage(final String message,final String senderName,int sent_from,int sent_to)
+	private void displayMessage(final String message,final String senderName,final int sent_from,final int sent_to)
 	{
 		
 		SwingUtilities.invokeLater(new Runnable(){
@@ -1467,12 +1492,12 @@ public class ClientSide
 		
 	}
 	
-	private JPanel messageToDisplay(String sender , String message , long time , String typeInboxOrOutbox,int sent_from,int sent_to)
+	private JPanel messageToDisplay(String sender , final String message ,final long time , final String typeInboxOrOutbox,final int sent_from,final int sent_to)
 	{
 	
 		if(started)
 		{
-			JPanel newMessagePanel = new JPanel();
+			final JPanel newMessagePanel = new JPanel();
 			newMessagePanel.setLayout(new GridBagLayout());
 			if(typeInboxOrOutbox.equals("INBOX"))
 			{
@@ -1520,7 +1545,7 @@ public class ClientSide
 			
 			
 			
-			JLabel timeLabel = new JLabel(getConvertedTime(time));
+			final JLabel timeLabel = new JLabel(getConvertedTime(time));
 			timeLabel.setFont(new Font("Arial",Font.ITALIC,12));
 			timeLabel.setForeground(Color.decode("0x93989A"));
 			constraints.gridwidth = 1;
@@ -1549,7 +1574,7 @@ public class ClientSide
 			newMessagePanel.add(edit,constraints);
 			
 		  
-			JPopupMenu popupMenuMessagePanel = new JPopupMenu();
+			final JPopupMenu popupMenuMessagePanel = new JPopupMenu();
 			
 			JMenuItem menuItem = new JMenuItem("Edit");
 			menuItem.addActionListener(new ActionListener(){

@@ -1238,7 +1238,6 @@ public class ClientSide
 		try
 		{
 			Object[] toSend = {"/GET USERS ONLINE LIST"};
-			
 			oos.writeObject(toSend);
 		}
 		catch(IOException ex)
