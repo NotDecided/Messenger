@@ -1384,18 +1384,22 @@ public class ClientSide
     	   public void run(){
     		   try
     	   		{
+    			   String user_fullName = user_firstName + " "+user_lastName;
+    			   
     			   Message message = new Message();
     			   message.setMessage(messageText);
-    			   message.setFrom(String.valueOf(user_ID));
-    			   message.setTo(String.valueOf(receiver_ID));
+    			   message.setFrom(user_fullName);
+    			   message.setTo("receiver (UserID:" + receiver_ID + ")");
+    			   message.setSenderID(user_ID);
+    			   message.setReceiverID(receiver_ID);
+    			   message.setSendingTime(System.currentTimeMillis());
     			
     			   Object[] toSend ={"/SEND MESSAGE" , message};
-      			   String user_fullName = user_firstName + " "+user_lastName;
+      			   
       			   displayMessage(messageText,user_fullName,user_ID,receiver_ID);
       	   		   oos.writeObject(toSend);
       	   		   
       	   		   message = null;
-    			   //Object[] toSend = {"/SEND MESSAGE",user_ID,message,receiver_ID,System.currentTimeMillis(),user_firstName,user_lastName};
    			    
     	   		}
     	   		catch(IOException ex)
